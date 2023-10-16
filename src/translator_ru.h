@@ -1976,6 +1976,20 @@ class TranslatorRussian : public TranslatorAdapter_1_8_15
       if (single) result+="а:"; else result+="ов:";
       return result;
     }
+    virtual QCString trTopics()
+    { return "Компоненты"; }
+    virtual QCString trTopicDocumentation()
+    { return "Подробная документация компонент"; }
+    virtual QCString trTopicList()
+    { return "Список компонент"; }
+    virtual QCString trTopicIndex()
+    { return "Список компонент"; }
+    virtual QCString trTopicListDescription()
+    { return "Список разделов с кратким описанием:"; }
+    virtual QCString trCopyToClipboard()
+    {
+      return "Скопировать в буфер";
+    }
 };
 
 #endif

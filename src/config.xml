@@ -437,6 +437,17 @@ Go to the <a href="commands.html">next</a> section or return to the
 ]]>
       </docs>
     </option>
+    <option type='bool' id='INCLUDE_INHERITED_MEMB' defval='1'>
+      <docs>
+<![CDATA[
+ If the \c INCLUDE_INHERITED_MEMB tag is set to \c YES, doxygen will add all
+ inherited members of a class in the documentation (inlined to the class
+ documentation or separately depending on \c INLINE_INHERITED_MEMB flag).
+ If the \c INCLUDE_INHERITED_MEMB tag is set to \c NO, base class members
+ will appear only in the base class documentation.
+]]>
+      </docs>
+    </option>
     <option type='bool' id='INLINE_INHERITED_MEMB' defval='0'>
       <docs>
 <![CDATA[

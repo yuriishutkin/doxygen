@@ -2043,7 +2043,8 @@ void ClassDefImpl::endMemberDeclarations(OutputList &ol) const
 {
   //printf("%s: ClassDefImpl::endMemberDeclarations()\n",qPrint(name()));
   bool inlineInheritedMembers = Config_getBool(INLINE_INHERITED_MEMB);
-  if (!inlineInheritedMembers && countAdditionalInheritedMembers()>0)
+  bool includeInheritedMembers = Config_getBool(INCLUDE_INHERITED_MEMB);
+  if (includeInheritedMembers && !inlineInheritedMembers && countAdditionalInheritedMembers()>0)
   {
     ol.startMemberHeader("inherited");
     ol.parseText(theTranslator->trAdditionalInheritedMembers());
@@ -3513,6 +3514,7 @@ void ClassDefImpl::mergeMembers()
   m_impl->membersMerged=TRUE;
   //printf("  mergeMembers for %s\n",qPrint(name()));
   bool inlineInheritedMembers = Config_getBool(INLINE_INHERITED_MEMB);
+  bool includeInheritedMembers = Config_getBool(INCLUDE_INHERITED_MEMB);
   bool extractPrivate         = Config_getBool(EXTRACT_PRIVATE);
   for (const auto &bcd : baseClasses())
   {
@@ -3635,7 +3637,7 @@ void ClassDefImpl::mergeMembers()
                 prot = bcd.prot;
               }
 
-              if (inlineInheritedMembers)
+              if (includeInheritedMembers && inlineInheritedMembers)
               {
                 if (!isStandardFunc(srcMd))
                 {
@@ -3708,7 +3710,7 @@ void ClassDefImpl::mergeMembers()
                 Specifier virt=mi->virt();
                 if (virt==Specifier::Normal && bcd.virt!=Specifier::Normal) virt=bcd.virt;
 
-                if (inlineInheritedMembers)
+                if (includeInheritedMembers && inlineInheritedMembers)
                 {
                   if (!isStandardFunc(mi->memberDef()))
                   {
@@ -4312,7 +4314,8 @@ int ClassDefImpl::countMemberDeclarations(MemberListType lt,const ClassDef *inhe
       }
     }
     bool inlineInheritedMembers = Config_getBool(INLINE_INHERITED_MEMB);
-    if (!inlineInheritedMembers) // show inherited members as separate lists
+    bool includeInheritedMembers = Config_getBool(INCLUDE_INHERITED_MEMB);
+    if (includeInheritedMembers && !inlineInheritedMembers) // show inherited members as separate lists
     {
       count+=countInheritedDecMembers(lt,inheritedFrom,invert,showAlways,visitedClasses);
     }
@@ -4555,7 +4558,8 @@ void ClassDefImpl::writeMemberDeclarations(OutputList &ol,ClassDefSet &visitedCl
       ml2->writeDeclarations(ol,this,0,0,0,0,tt,st,FALSE,showInline,inheritedFrom,lt);
     }
     bool inlineInheritedMembers = Config_getBool(INLINE_INHERITED_MEMB);
-    if (!inlineInheritedMembers) // show inherited members as separate lists
+    bool includeInheritedMembers = Config_getBool(INCLUDE_INHERITED_MEMB);
+    if (includeInheritedMembers && !inlineInheritedMembers) // show inherited members as separate lists
     {
       writeInheritedMemberDeclarations(ol,visitedClasses,lt,lt2,title,
           inheritedFrom ? inheritedFrom : this,
