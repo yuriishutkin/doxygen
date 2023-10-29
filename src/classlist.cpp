@@ -104,7 +104,10 @@ void ClassLinkedRefMap::writeDocumentation(OutputList &ol,const Definition * con
         ol.endGroupHeader();
         found=TRUE;
       }
+
+      ol.increaseHieararchyLevel();
       cd->writeInlineDocumentation(ol);
+      ol.decreaseHieararchyLevel();
     }
   }
 }

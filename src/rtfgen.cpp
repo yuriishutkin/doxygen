@@ -184,7 +184,7 @@ void RTFCodeGenerator::codify(const QCString &str)
 
 void RTFCodeGenerator::startCodeFragment(const QCString &)
 {
-  DBG_RTF(*m_t << "{\\comment (startCodeFragment) }\n")
+  //DBG_RTF(*m_t << "{\\comment (startCodeFragment) }\n")
   *m_t << "{\n";
   *m_t << rtf_Style_Reset << rtf_Code_DepthStyle();
 }
@@ -193,7 +193,7 @@ void RTFCodeGenerator::endCodeFragment(const QCString &)
 {
   endCodeLine();
 
-  DBG_RTF(*m_t << "{\\comment (endCodeFragment) }\n")
+  //DBG_RTF(*m_t << "{\\comment (endCodeFragment) }\n")
   *m_t << "}\n";
   //m_omitParagraph = TRUE;
 }
@@ -672,6 +672,28 @@ void RTFGenerator::startProjectNumber()
 void RTFGenerator::endProjectNumber()
 {
   DBG_RTF(m_t << "{\\comment endProjectNumber }\n")
+}
+
+void RTFGenerator::increaseHieararchyLevel()
+{
+  m_hierarchyLevel++;
+}
+
+void RTFGenerator::decreaseHieararchyLevel()
+{
+  m_hierarchyLevel--;
+}
+
+void RTFGenerator::startSectionLevel(int indentLevel, bool hidden) {
+  indentLevel += 2;
+  if (indentLevel > 6) indentLevel = 6;
+  QCString heading;
+  heading.sprintf("Heading%d", indentLevel);
+  m_t << rtf_Style_Reset << rtf_Style[heading.str()].reference() << "\n";
+}
+
+void RTFGenerator::startParagraphLevel(int indentLevel, bool hidden) {
+  m_t << rtf_Style_Reset << "\n";
 }
 
 void RTFGenerator::startIndexSection(IndexSection is)
@@ -1442,16 +1464,16 @@ void RTFGenerator::startCompoundTemplateParams()
 {
   //beginRTFSubSubSection();
   m_t << "\n";
-  DBG_RTF(m_t << "{\\comment Begin SubSubSection}\n")
-  m_t << "{\n";
-  int level = 4 + m_hierarchyLevel;
-  m_t << rtf_Style_Reset << rtf_Style[QCString().sprintf("Heading%d", level).str()].reference() << "\n";
+  DBG_RTF(m_t << "{\\comment (startCompoundTemplateParams)}\n")
+
+  startParagraphLevel(0);
+  startBold();
 }
 
 void RTFGenerator::endCompoundTemplateParams()
 {
+  endBold();
   newParagraph();
-  m_t << "}\n";
 }
 
 void RTFGenerator::startTextLink(const QCString &f,const QCString &anchor)
@@ -1551,11 +1573,10 @@ void RTFGenerator::endPageRef(const QCString &clname, const QCString &anchor)
 void RTFGenerator::startTitleHead(const QCString &)
 {
   DBG_RTF(m_t << "{\\comment startTitleHead}\n")
-  int level = 2 + m_hierarchyLevel;
-  QCString heading;
-  heading.sprintf("Heading%d", level);
-  //    beginRTFSection();
-  m_t << rtf_Style_Reset << rtf_Style[heading.str()].reference() << "\n";
+
+  int hierarchyLevel = m_hierarchyLevel;
+
+  startSectionLevel(hierarchyLevel);
 }
 
 void RTFGenerator::endTitleHead(const QCString &fileName,const QCString &name)
@@ -1579,30 +1600,38 @@ void RTFGenerator::endTitleHead(const QCString &fileName,const QCString &name)
   }
 }
 
-void RTFGenerator::startGroupHeader(int extraIndent)
+void RTFGenerator::startGroupHeader(int extraIndentLevel)
 {
-  DBG_RTF(m_t << "{\\comment startGroupHeader}\n")
-  m_t << rtf_Style_Reset;
-  extraIndent += m_hierarchyLevel;
-  if (extraIndent>=2)
+  DBG_RTF(m_t << "{\\comment startGroupHeader " << m_hierarchyLevel << "+" << extraIndentLevel << "}\n")
+
+  if (extraIndentLevel >= 2)
   {
-    m_t << rtf_Style["Heading5"].reference();
+    startParagraphLevel(extraIndentLevel - 2, true);
   }
-  else if (extraIndent==1)
+  else
   {
-    m_t << rtf_Style["Heading4"].reference();
+    extraIndentLevel += m_hierarchyLevel + 1;
+    startSectionLevel(extraIndentLevel);
   }
-  else // extraIndent==0
-  {
-    m_t << rtf_Style["Heading3"].reference();
-  }
-  m_t << "\n";
 }
 
 void RTFGenerator::endGroupHeader(int)
 {
   DBG_RTF(m_t << "{\\comment endGroupHeader}\n")
   m_t << "\\par\n";
+  m_t << rtf_Style_Reset << "\n";
+}
+
+void RTFGenerator::startMemberHeader(const QCString&, int extraIndent) {
+  DBG_RTF(m_t << "{\\comment startMemberHeader}\n")
+
+  int l = m_hierarchyLevel + 1;
+
+  startSectionLevel(l, true);
+}
+void RTFGenerator::endMemberHeader() {
+  DBG_RTF(m_t << "{\\comment endMemberHeader}\n")
+    m_t << "\\par\n";
   m_t << rtf_Style_Reset << "\n";
 }
 
@@ -1621,15 +1650,14 @@ void RTFGenerator::startMemberDoc(const QCString &clname,
     addIndexItem(clname,memname);
   }
 
-  int level = 4 + m_hierarchyLevel;
   if (showInline)
-    ++level;
-  if (level > 5)
-    level = 5;
-  if (level < 1)
-    level = 1;
-  m_t << rtf_Style_Reset << rtf_Style[QCString().sprintf("Heading%d", level).str()].reference();
-  //styleStack.push(rtf_Style_Heading4);
+  {
+    startParagraphLevel(1);
+  }
+  else
+  {
+    startSectionLevel(m_hierarchyLevel + 2);
+  }
   m_t << "{\n";
   //printf("RTFGenerator::startMemberDoc() '%s'\n",rtf_Style["Heading4"].reference());
   startBold();
@@ -1721,9 +1749,9 @@ void RTFGenerator::endMemberDescription()
   DBG_RTF(m_t << "{\\comment (endMemberDescription)}\n")
   endEmphasis();
   decIndentLevel();
-  m_t << "\\par";
+  newParagraph();
   m_t << "}\n";
-  m_omitParagraph = TRUE;
+  //m_omitParagraph = TRUE;
 }
 
 void RTFGenerator::startDescForItem()
@@ -1741,22 +1769,21 @@ void RTFGenerator::startSection(const QCString &,const QCString &title,SectionTy
   DBG_RTF(m_t << "{\\comment (startSection)}\n")
   m_t << "{";
   m_t << rtf_Style_Reset;
-  int num=4;
+  int num;
   switch(type)
   {
-    case SectionType::Page:          num=2+m_hierarchyLevel; break;
-    case SectionType::Section:       num=3+m_hierarchyLevel; break;
-    case SectionType::Subsection:    num=4+m_hierarchyLevel; break;
-    case SectionType::Subsubsection: num=4+m_hierarchyLevel; break;
-    case SectionType::Paragraph:     num=4+m_hierarchyLevel; break;
+    case SectionType::Page:          num=m_hierarchyLevel; break;
+    case SectionType::Section:       num=1+m_hierarchyLevel; break;
+    case SectionType::Subsection:    num=2+m_hierarchyLevel; break;
+    case SectionType::Subsubsection: num=2+m_hierarchyLevel; break;
+    case SectionType::Paragraph:     num=2+m_hierarchyLevel; break;
     default: ASSERT(0); break;
   }
-  if (num > 5)
-    num = 5;
-  QCString heading;
-  heading.sprintf("Heading%d",num);
-  // set style
-  m_t << rtf_Style[heading.str()].reference();
+  if (num > 3)
+    num = 3;
+  
+  startSectionLevel(num);
+
   // make table of contents entry
   m_t << "{\\tc\\tcl" << num << " \\v ";
   docify(title);
@@ -2201,9 +2228,9 @@ static bool preProcessFile(Dir &d,const QCString &infName, TextStream &t, bool b
       size_t startNamePos  = prevLine.find('"',pos)+1;
       size_t endNamePos    = prevLine.find('"',startNamePos);
       std::string fileName = prevLine.substr(startNamePos,endNamePos-startNamePos);
-      DBG_RTF(t << "{\\comment begin include " << fileName << "}\n")
+      //DBG_RTF(t << "{\\comment begin include " << fileName << "}\n")
       if (!preProcessFile(d,fileName.c_str(),t,FALSE)) return FALSE;
-      DBG_RTF(t << "{\\comment end include " << fileName << "}\n")
+      //DBG_RTF(t << "{\\comment end include " << fileName << "}\n")
     }
     else if (!first) // no INCLUDETEXT on this line
     {
@@ -2537,7 +2564,7 @@ void RTFGenerator::writeDoc(const IDocNodeAST *ast,const Definition *ctx,const M
     RTFDocVisitor visitor(m_t,*m_codeList,ctx?ctx->getDefFileExtension():QCString(""),m_hierarchyLevel);
     std::visit(visitor,astImpl->root);
   }
-  m_omitParagraph = TRUE;
+  //m_omitParagraph = TRUE;
 }
 
 void RTFGenerator::rtfwriteRuler_doubleline()
@@ -2640,7 +2667,7 @@ void RTFGenerator::startInlineHeader()
 {
   DBG_RTF(m_t << "{\\comment (startInlineHeader)}\n")
   m_t << "{\n";
-  m_t << rtf_Style_Reset << rtf_Style["Heading5"].reference();
+  startSectionLevel(m_hierarchyLevel + 2, true);
   startBold();
 }
 

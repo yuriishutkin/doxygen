@@ -2617,12 +2617,14 @@ void MemberDefImpl::writeDeclaration(OutputList &ol,
           ol.popGeneratorState();
         }
       }
+#if 0
       // for RTF we need to add an extra empty paragraph
       ol.pushGeneratorState();
       ol.disableAllBut(OutputType::RTF);
       ol.startParagraph();
       ol.endParagraph();
       ol.popGeneratorState();
+#endif
       ol.endMemberDescription();
     }
   }

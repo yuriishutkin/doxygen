@@ -108,6 +108,12 @@ class LatexGenerator : public OutputGenerator
     void endFile();
     void clearBuffer();
 
+    void increaseHieararchyLevel();
+    void decreaseHieararchyLevel();
+
+    void startSectionLevel(int indentLevel, bool hidden = false);
+    void startParagraphLevel(int indentLevel, bool hidden = false);
+
     void startPageDoc(const QCString &) {}
     void endPageDoc() {}
     void startIndexSection(IndexSection);
@@ -167,8 +173,8 @@ class LatexGenerator : public OutputGenerator
     void endMemberItem(MemberItemType);
     void startMemberTemplateParams();
     void endMemberTemplateParams(const QCString &,const QCString &);
-    void startCompoundTemplateParams() { m_t << "\\subsubsection*{";}
-    void endCompoundTemplateParams()   { m_t << "}\n"; }
+    void startCompoundTemplateParams();
+    void endCompoundTemplateParams();
 
     void startMemberGroupHeader(bool);
     void endMemberGroupHeader();

@@ -106,6 +106,9 @@ class HtmlGenerator : public OutputGenerator
     void clearBuffer();
     void writeSearchInfo();
 
+    void increaseHieararchyLevel() {}
+    void decreaseHieararchyLevel() {}
+
     void startIndexSection(IndexSection) {}
     void endIndexSection(IndexSection) {}
     void writePageLink(const QCString &,bool) {}

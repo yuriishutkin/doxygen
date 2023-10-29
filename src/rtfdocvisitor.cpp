@@ -721,8 +721,8 @@ void RTFDocVisitor::operator()(const DocSimpleSect &s)
   DBG_RTF("{\\comment RTFDocVisitor::operator()(const DocSimpleSect &)}\n");
   if (!m_lastIsPara) m_t << "\\par\n";
   m_t << "{"; // start desc
-  //m_t << "{\\b "; // start bold
-  m_t << "{" << rtf_Style["Heading5"].reference() << "\n";
+  m_t << "{\\b "; // start bold
+  //m_t << "{" << rtf_Style["Heading5"].reference() << "\n";
   switch(s.type())
   {
     case DocSimpleSect::See:
@@ -953,8 +953,8 @@ void RTFDocVisitor::operator()(const DocHtmlDescTitle &dt)
   if (m_hide) return;
   DBG_RTF("{\\comment RTFDocVisitor::operator()(const DocHtmlDescTitle &)}\n");
   //m_t << "\\par\n";
-  //m_t << "{\\b ";
-  m_t << "{" << rtf_Style["Heading5"].reference() << "\n";
+  m_t << "{\\b ";
+  //m_t << "{" << rtf_Style["Heading5"].reference() << "\n";
   m_lastIsPara=FALSE;
   visitChildren(dt);
   m_t << "\\par\n";
@@ -1318,8 +1318,8 @@ void RTFDocVisitor::operator()(const DocParamSect &s)
   DBG_RTF("{\\comment RTFDocVisitor::operator()(const DocParamSect &)}\n");
   m_t << "{"; // start param list
   if (!m_lastIsPara) m_t << "\\par\n";
-  //m_t << "{\\b "; // start bold
-  m_t << "{" << rtf_Style["Heading5"].reference() << "\n";
+  m_t << "{\\b "; // start bold
+  //m_t << "{" << rtf_Style["Heading5"].reference() << "\n";
   switch(s.type())
   {
     case DocParamSect::Param:
@@ -1503,8 +1503,8 @@ void RTFDocVisitor::operator()(const DocXRefItem &x)
     m_lastIsPara=TRUE;
   }
   m_t << "{"; // start param list
-  //m_t << "{\\b "; // start bold
-  m_t << "{" << rtf_Style["Heading5"].reference() << "\n";
+  m_t << "{\\b "; // start bold
+  //m_t << "{" << rtf_Style["Heading5"].reference() << "\n";
   if (Config_getBool(RTF_HYPERLINKS) && !anonymousEnum)
   {
     QCString refName;

@@ -1383,6 +1383,8 @@ void ClassDefImpl::writeTemplateSpec(OutputList &ol,const Definition *d,
       while (it!=al.end())
       {
         Argument a = *it;
+        ol.docify(a.type);
+#if 0
         linkifyText(TextGeneratorOLImpl(ol), // out
           d,                       // scope
           getFileDef(),            // fileScope
@@ -1390,6 +1392,7 @@ void ClassDefImpl::writeTemplateSpec(OutputList &ol,const Definition *d,
           a.type,                  // text
           FALSE                    // autoBreak
           );
+#endif
         if (!a.name.isEmpty())
         {
           ol.docify(" ");
@@ -1409,6 +1412,8 @@ void ClassDefImpl::writeTemplateSpec(OutputList &ol,const Definition *d,
     if (!m_impl->requiresClause.isEmpty())
     {
       ol.docify("requires ");
+      ol.docify(m_impl->requiresClause);
+#if 0
       linkifyText(TextGeneratorOLImpl(ol), // out
           d,                       // scope
           getFileDef(),            // fileScope
@@ -1416,6 +1421,7 @@ void ClassDefImpl::writeTemplateSpec(OutputList &ol,const Definition *d,
           m_impl->requiresClause,  // text
           FALSE                    // autoBreak
           );
+#endif
       ol.lineBreak();
     }
     ol.docify(type.lower()+" "+name);
@@ -2269,9 +2275,9 @@ void ClassDefImpl::writeInlineDocumentation(OutputList &ol) const
   ol.disable(OutputType::Html);
   {
     // for LaTeX/RTF/Man
-    ol.startGroupHeader(1);
+    ol.startGroupHeader();
     ol.parseText(s);
-    ol.endGroupHeader(1);
+    ol.endGroupHeader();
   }
   ol.popGeneratorState();
 

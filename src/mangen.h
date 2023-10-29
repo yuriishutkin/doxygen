@@ -81,6 +81,8 @@ class ManGenerator : public OutputGenerator
     void writeFooter(const QCString &) {}
     void endFile();
     void clearBuffer();
+    void increaseHieararchyLevel() {}
+    void decreaseHieararchyLevel() {}
 
     void startPageDoc(const QCString &) {}
     void endPageDoc() {}

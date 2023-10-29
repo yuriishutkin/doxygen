@@ -356,6 +356,8 @@ namespace OutputGenIntf
   template<class T> struct writeSearchInfo             { static constexpr auto method = &T::writeSearchInfo;             };
   template<class T> struct writeFooter                 { static constexpr auto method = &T::writeFooter;                 };
   template<class T> struct endFile                     { static constexpr auto method = &T::endFile;                     };
+  template<class T> struct increaseHieararchyLevel     { static constexpr auto method = &T::increaseHieararchyLevel;     };
+  template<class T> struct decreaseHieararchyLevel     { static constexpr auto method = &T::decreaseHieararchyLevel;     };
   template<class T> struct startTitleHead              { static constexpr auto method = &T::startTitleHead;              };
   template<class T> struct endTitleHead                { static constexpr auto method = &T::endTitleHead;                };
   template<class T> struct startParagraph              { static constexpr auto method = &T::startParagraph;              };
@@ -591,6 +593,10 @@ class OutputList
     { foreach<OutputGenIntf::writeFooter>(navPath); }
     void endFile()
     { foreach<OutputGenIntf::endFile>(); }
+    void increaseHieararchyLevel()
+    { foreach<OutputGenIntf::increaseHieararchyLevel>(); }
+    void decreaseHieararchyLevel()
+    { foreach<OutputGenIntf::decreaseHieararchyLevel>(); }
     void startTitleHead(const QCString &fileName)
     { foreach<OutputGenIntf::startTitleHead>(fileName); }
     void endTitleHead(const QCString &fileName,const QCString &name)

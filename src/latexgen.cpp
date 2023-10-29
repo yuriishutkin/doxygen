@@ -822,6 +822,37 @@ static QCString substituteLatexKeywords(const QCString &str,
   return result;
 }
 
+void LatexGenerator::increaseHieararchyLevel()
+{
+  m_hierarchyLevel++;
+}
+
+void LatexGenerator::decreaseHieararchyLevel()
+{
+  m_hierarchyLevel--;
+}
+
+void LatexGenerator::startSectionLevel(int indentLevel, bool hidden) {
+  if (indentLevel < 0) {
+    m_t << "\\chapter{";
+  }
+  else {
+    m_t << "\\doxy" << QCString("sub").repeat(indentLevel) << "section";
+    if (hidden) m_t << "*";
+    m_t << "{";
+  }
+}
+
+void LatexGenerator::startParagraphLevel(int indentLevel, bool hidden) {
+  if (indentLevel > 1) {
+    indentLevel = 1;
+    hidden = true;
+  }
+  m_t << "\\doxy" << QCString("sub").repeat(indentLevel) << "paragraph";
+  if (hidden) m_t << "*";
+  m_t << "{";
+}
+
 void LatexGenerator::startIndexSection(IndexSection is)
 {
   bool compactLatex = Config_getBool(COMPACT_LATEX);
@@ -1381,10 +1412,7 @@ void LatexGenerator::startTitleHead(const QCString &fileName)
     ++hierarchyLevel;
   }
 
-  if (hierarchyLevel < 0)
-    m_t << "\\chapter{";
-  else
-    m_t << "\\doxy" << QCString("sub").repeat(hierarchyLevel) << "section{";
+  startSectionLevel(hierarchyLevel);
 }
 
 void LatexGenerator::endTitleHead(const QCString &fileName,const QCString &name)
@@ -1417,11 +1445,11 @@ void LatexGenerator::startTitle()
 {
   if (Config_getBool(COMPACT_LATEX))
   {
-    m_t << "\\doxysubsection{";
+    startSectionLevel(1);
   }
   else
   {
-    m_t << "\\doxysection{";
+    startSectionLevel(0);
   }
 }
 
@@ -1432,18 +1460,14 @@ void LatexGenerator::startGroupHeader(int extraIndentLevel)
     extraIndentLevel++;
   }
 
-  if (extraIndentLevel>=3)
+  if (extraIndentLevel>=2)
   {
-    m_t << "\\doxysubparagraph*{";
-  }
-  else if (extraIndentLevel==2)
-  {
-    m_t << "\\doxyparagraph{";
+    startParagraphLevel(extraIndentLevel-2);
   }
   else
   {
     extraIndentLevel += m_hierarchyLevel + 1;
-    m_t << "\\doxy" << QCString("sub").repeat(extraIndentLevel) << "section{";
+    startSectionLevel(extraIndentLevel);
   }
   m_disableLinks=TRUE;
 }
@@ -1462,7 +1486,7 @@ void LatexGenerator::startMemberHeader(const QCString &,int)
     ++l;
   }
 
-  m_t << "\\doxysub" << QCString("sub").repeat(l) << "section*{";
+  startSectionLevel(l+1, true);
   m_disableLinks=TRUE;
 }
 
@@ -1514,18 +1538,17 @@ void LatexGenerator::startMemberDoc(const QCString &clname,
   bool pdfHyperlinks = Config_getBool(PDF_HYPERLINKS);
   if (showInline)
   {
-    m_t << "\\doxysubparagraph";
+    startParagraphLevel(1);
   }
   else if (compactLatex)
   {
-    m_t << "\\doxyparagraph";
+    startParagraphLevel(0);
   }
   else
   {
-    m_t << "\\doxy" << QCString("sub").repeat(m_hierarchyLevel + 2) << "section";
+    startSectionLevel(m_hierarchyLevel + 2);
   }
 
-  m_t << "{";
   if (pdfHyperlinks)
   {
     m_t << "\\texorpdfstring{";
@@ -1733,6 +1756,16 @@ void LatexGenerator::endMemberTemplateParams(const QCString &,const QCString &)
   {
     m_t << "}\\\\";
   }
+}
+
+void LatexGenerator::startCompoundTemplateParams()
+{
+  startParagraphLevel(0);
+}
+
+void LatexGenerator::endCompoundTemplateParams()
+{
+  m_t << "}\n";
 }
 
 void LatexGenerator::startMemberItem(const QCString &,MemberItemType type,const QCString &)
@@ -2081,11 +2114,11 @@ void LatexGenerator::startInlineHeader()
 {
   if (Config_getBool(COMPACT_LATEX))
   {
-    m_t << "\\doxyparagraph*{";
+    startParagraphLevel(0, true);
   }
   else
   {
-    m_t << "\\doxy" << QCString("sub").repeat(m_hierarchyLevel + 1) << "section*{";
+    startSectionLevel(m_hierarchyLevel + 1, true);
   }
 }
 

@@ -97,6 +97,12 @@ class RTFGenerator : public OutputGenerator
     void endFile();
     void clearBuffer();
 
+    void increaseHieararchyLevel();
+    void decreaseHieararchyLevel();
+
+    void startSectionLevel(int indentLevel, bool hidden = false);
+    void startParagraphLevel(int indentLevel, bool hidden = false);
+
     void startPageDoc(const QCString &) {}
     void endPageDoc() {}
     void startIndexSection(IndexSection);
@@ -139,8 +145,8 @@ class RTFGenerator : public OutputGenerator
     void endMemberSections() {}
     void startHeaderSection() {}
     void endHeaderSection() {}
-    void startMemberHeader(const QCString &,int) { startGroupHeader(0); }
-    void endMemberHeader() { endGroupHeader(FALSE); }
+    void startMemberHeader(const QCString&, int extraIndent);
+    void endMemberHeader();
     void startMemberSubtitle();
     void endMemberSubtitle();
     void startMemberDocList() {}
