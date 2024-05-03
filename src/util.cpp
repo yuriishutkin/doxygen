@@ -6987,3 +6987,15 @@ QCString detab(const QCString &s,int &refIndent)
   out.addChar(0);
   return out.get();
 }
+
+QCString getProjectId()
+{
+  QCString projectCookie = Config_getString(HTML_PROJECT_COOKIE);
+  if (projectCookie.isEmpty()) return QCString();
+  uint8_t md5_sig[16];
+  char sigStr[34];
+  MD5Buffer(projectCookie.data(),projectCookie.length(),md5_sig);
+  MD5SigToString(md5_sig,sigStr);
+  sigStr[32]='_'; sigStr[33]=0;
+  return sigStr;
+}

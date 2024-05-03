@@ -431,7 +431,7 @@ static QCString substituteHtmlKeywords(const QCString &str,
       {
         searchCssJs += "<script type=\"text/javascript\">\n"
 					"/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */\n"
-				"  $(document).ready(function() { init_search(); });\n"
+				"  $(function() { init_search(); });\n"
 					"/* @license-end */\n"
 					"</script>";
       }
@@ -442,7 +442,7 @@ static QCString substituteHtmlKeywords(const QCString &str,
       {
         searchCssJs += "<script type=\"text/javascript\">\n"
 					"/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */\n"
-					"  $(document).ready(function() {\n"
+					"  $(function() {\n"
 					"    if ($('.searchresults').length > 0) { searchBox.DOMSearchField().focus(); }\n"
 					"  });\n"
 					"  /* @license-end */\n"
@@ -1214,12 +1214,12 @@ void HtmlGenerator::init()
 
   if (Config_getBool(HTML_COLORSTYLE)==HTML_COLORSTYLE_t::TOGGLE)
   {
-    //mgr.copyResource("darkmode_toggle.js",dname);
     std::ofstream f = Portable::openOutputStream(dname+"/darkmode_toggle.js");
     if (f.is_open())
     {
       TextStream t(&f);
-      t << replaceColorMarkers(mgr.getAsString("darkmode_toggle.js"));
+      t << substitute(replaceColorMarkers(mgr.getAsString("darkmode_toggle.js")),
+          "$PROJECTID",getProjectId());
     }
   }
 
@@ -2839,11 +2839,11 @@ static void writeDefaultQuickLinks(TextStream &t,bool compact,
     {
       if (!serverBasedSearch)
       {
-        t << "  $(document).ready(function() { init_search(); });\n";
+        t << "  $(function() { init_search(); });\n";
       }
       else
       {
-        t << "  $(document).ready(function() {\n"
+        t << "  $(function() {\n"
           << "    if ($('.searchresults').length > 0) { searchBox.DOMSearchField().focus(); }\n";
         t << "  });\n";
       }
@@ -2885,7 +2885,7 @@ static void writeDefaultQuickLinks(TextStream &t,bool compact,
   {
     t << "<script type=\"text/javascript\">\n";
     t << "/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */\n";
-    t << "$(document).ready(function() { init_codefold(" << (relPath.isEmpty() ? "0" : "1") << "); });\n";
+    t << "$(function() { init_codefold(" << (relPath.isEmpty() ? "0" : "1") << "); });\n";
     t << "/* @license-end */\n";
     t << "</script>\n";
   }
@@ -2922,7 +2922,7 @@ QCString HtmlGenerator::writeSplitBarAsString(const QCString &name,const QCStrin
      "</div>\n"
      "<script type=\"text/javascript\">\n"
      "/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */\n"
-     "$(document).ready(function(){initNavTree('") + fn +
+     "$(function(){initNavTree('") + fn +
      QCString("','") + relpath +
      QCString("'); initResizable(); });\n"
      "/* @license-end */\n"
@@ -3153,7 +3153,7 @@ void HtmlGenerator::writeExternalSearchPage()
     t << "};\n\n";
     t << ResourceMgr::instance().getAsString("extsearch.js");
     t << "\n";
-    t << "$(document).ready(function() {\n";
+    t << "$(function() {\n";
     t << "  var query = trim(getURLParameter('query'));\n";
     t << "  if (query) {\n";
     t << "    searchFor(query,0,20);\n";
