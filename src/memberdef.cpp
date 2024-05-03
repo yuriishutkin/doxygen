@@ -4449,6 +4449,10 @@ void MemberDefImpl::addListReference(Definition *)
     }
   }
   const RefItemVector &xrefItems = xrefListItems();
+  if (sep!="::")
+  {
+    memName = substitute(memName,"::",sep);
+  }
   addRefItem(xrefItems,
         qualifiedName()+argsString(), // argsString is needed for overloaded functions (see bug 609624)
         memLabel,
