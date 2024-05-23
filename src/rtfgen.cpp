@@ -50,8 +50,8 @@
 #include "outputlist.h"
 #include "moduledef.h"
 
-#define DBG_RTF(x) x;
-//#define DBG_RTF(x)
+//#define DBG_RTF(x) x;
+#define DBG_RTF(x)
 
 static StringSet removeSet;
 

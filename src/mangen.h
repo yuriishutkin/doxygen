@@ -72,8 +72,8 @@ class ManGenerator : public OutputGenerator, public OutputGenIntf
     void clearBuffer();
     void newParagraph();
 
-    void increaseHieararchyLevel() {}
-    void decreaseHieararchyLevel() {}
+    void increaseHieararchyLevel() override {}
+    void decreaseHieararchyLevel() override {}
     //--------------------------------------------------------------
 
     OutputType type() const override { return OutputType::Man; }

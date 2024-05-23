@@ -111,8 +111,8 @@ class LatexGenerator : public OutputGenerator, public OutputGenIntf
     void writeDoc(const IDocNodeAST *node,const Definition *ctx,const MemberDef *,int id) override;
     void startFile(const QCString &name,const QCString &manName,const QCString &title,int id,int hierarchyLevel) override;
     void endFile() override;
-    void increaseHieararchyLevel();
-    void decreaseHieararchyLevel();
+    void increaseHieararchyLevel() override;
+    void decreaseHieararchyLevel() override;
 
     void startSectionLevel(int indentLevel, bool hidden = false);
     void startParagraphLevel(int indentLevel, bool hidden = false);

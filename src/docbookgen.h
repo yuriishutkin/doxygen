@@ -118,8 +118,8 @@ class DocbookGenerator : public OutputGenerator, public OutputGenIntf
     void startFile(const QCString &name,const QCString &manName,const QCString &title,int id,int hierarchyLevel) override;
     void endFile() override;
 
-    void increaseHieararchyLevel() {}
-    void decreaseHieararchyLevel() {}
+    void increaseHieararchyLevel() override {}
+    void decreaseHieararchyLevel() override {}
     void writeSearchInfo() override {DB_GEN_EMPTY};
     void writeFooter(const QCString &) override {DB_GEN_NEW};
     void startIndexSection(IndexSection) override;

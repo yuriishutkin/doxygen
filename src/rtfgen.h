@@ -90,8 +90,8 @@ class RTFGenerator : public OutputGenerator, public OutputGenIntf
     void clearBuffer();
 
     //-------------------------------------------------------
-    void increaseHieararchyLevel();
-    void decreaseHieararchyLevel();
+    void increaseHieararchyLevel() override;
+    void decreaseHieararchyLevel() override;
 
     void startSectionLevel(int indentLevel, bool hidden = false);
     void startParagraphLevel(int indentLevel, bool hidden = false);

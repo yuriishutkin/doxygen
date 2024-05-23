@@ -109,8 +109,8 @@ class HtmlGenerator : public OutputGenerator, public OutputGenIntf
     void writeFooter(const QCString &navPath) override;
     void writeSearchInfo() override;
 
-    void increaseHieararchyLevel() {}
-    void decreaseHieararchyLevel() {}
+    void increaseHieararchyLevel() override {}
+    void decreaseHieararchyLevel() override {}
     void startIndexSection(IndexSection) override {}
     void endIndexSection(IndexSection) override {}
     void writePageLink(const QCString &,bool) override {}
