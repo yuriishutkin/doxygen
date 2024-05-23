@@ -46,7 +46,7 @@
 #include "portable.h"
 #include "dir.h"
 
-class Doxyparse : public OutputCodeExtension
+class Doxyparse : public OutputCodeIntf
 {
   public:
     Doxyparse(const FileDef *fd) : m_fd(fd) {}
@@ -55,6 +55,7 @@ class Doxyparse : public OutputCodeExtension
     // these are just null functions, they can be used to produce a syntax highlighted
     // and cross-linked version of the source code, but who needs that anyway ;-)
     OutputType type() const override { return OutputType::Extension; }
+    std::unique_ptr<OutputCodeIntf> clone() override { return std::make_unique<Doxyparse>(m_fd); }
     void codify(const QCString &) override {}
     void writeCodeLink(CodeSymbolType,const QCString &,const QCString &,const QCString &,const QCString &,const QCString &)  override {}
     void startCodeLine(int) override {}
@@ -99,12 +100,12 @@ static void findXRefSymbols(FileDef *fd)
   intf->resetCodeParserState();
 
   // create a new backend object
-  Doxyparse parse(fd);
+  std::unique_ptr<OutputCodeIntf> parse = std::make_unique<Doxyparse>(fd);
   OutputCodeList parseList;
-  parseList.add(OutputCodeDeferExtension(&parse));
+  parseList.add(std::move(parse));
 
   // parse the source code
-  intf->parseCode(parseList, 0, fileToString(fd->absFilePath()), lang, FALSE, 0, fd);
+  intf->parseCode(parseList, QCString(), fileToString(fd->absFilePath()), lang, FALSE, QCString(), fd);
 }
 
 static bool ignoreStaticExternalCall(const MemberDef *context, const MemberDef *md) {
@@ -176,7 +177,7 @@ static void printNumberOfConditionalPaths(const MemberDef* md) {
 }
 
 static int isPartOfCStruct(const MemberDef * md) {
-  return is_c_code && md->getClassDef() != NULL;
+  return is_c_code && md->getClassDef() != nullptr;
 }
 
 std::string sanitizeString(std::string data) {
@@ -430,7 +431,7 @@ int main(int argc,char **argv) {
     }
     else if (!strcmp(argv[1],"--version"))
     {
-      printf("%s version: %s\n",argv[0],getFullVersion());
+      printf("%s version: %s\n",argv[0],getFullVersion().c_str());
       exit(0);
     }
   }

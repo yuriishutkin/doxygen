@@ -27,16 +27,8 @@ A configuration file is a free-form ASCII text file with a structure
 that is similar to that of a \c Makefile, with the default name \c Doxyfile. It is
 parsed by \c doxygen. The file may contain tabs and newlines for
 formatting purposes. The statements in the file are case-sensitive.
-Comments may be placed anywhere within the file (except within quotes).
-Comments beginning with two hash characters (\c \#\#) are kept when updating
-the configuration file and are placed in front of the TAG they are in front of.
-Comments beginning with two hash characters (\c \#\#) at the beginning of the
-configuration file are also kept and placed at the beginning of the file.
-Comments beginning with two hash characters (\c \#\#) at the end of the
-configuration file are also kept and placed at the end of the file.
-Comments begin with the hash character (\c \#) and ends at the end of the line.
 
-The file essentially consists of a list of assignment statements.
+The configuration file essentially consists of a list of assignment statements.
 Each statement consists of a \c TAG_NAME written in capitals,
 followed by the equal sign (<code>=</code>) and one or more values. If the same tag
 is assigned more than once, the last assignment overwrites any earlier
@@ -45,7 +37,13 @@ the <code>+=</code> operator can be used instead of <code>=</code> to append
 new values to the list. Values are sequences of non-blanks. If the value should
 contain one or more blanks it must be surrounded by quotes (<code>&quot;...&quot;</code>).
 Multiple lines can be concatenated by inserting a backslash (\c \\)
-as the last character of a line.
+as the last non-whitespace character of a line.
+
+Comments begin with the hash character (\c \#) and end at the end of the line.
+Comments may be placed anywhere within the file (except within quotes).
+Comments beginning with two hash characters (\c \#\#) are kept while updating
+the configuration file when they are placed in front of a \c TAG_NAME, or
+at the beginning or end of the configuration file.
 
 Environment variables can be expanded using the pattern <code>\$(ENV_VARIABLE_NAME)</code>.
 A small example:
@@ -714,7 +712,7 @@ Go to the <a href="commands.html">next</a> section or return to the
 ]]>
       </docs>
     </option>
-    <option type='int' id='TOC_INCLUDE_HEADINGS' minval='0' maxval='99' defval='5' depends='MARKDOWN_SUPPORT'>
+    <option type='int' id='TOC_INCLUDE_HEADINGS' minval='0' maxval='99' defval='6' depends='MARKDOWN_SUPPORT'>
       <docs>
 <![CDATA[
  When the \c TOC_INCLUDE_HEADINGS tag is set to a non-zero value, all headings
@@ -751,7 +749,7 @@ Go to the <a href="commands.html">next</a> section or return to the
  include (a tag file for) the STL sources as input, then you should
  set this tag to \c YES in order to let doxygen match functions declarations and
  definitions whose arguments contain STL classes (e.g. `func(std::string`); versus
- `func(std::string) {}`). This also make the inheritance and collaboration
+ `func(std::string) {}`). This also makes the inheritance and collaboration
  diagrams that involve STL classes more complete and accurate.
 ]]>
       </docs>
@@ -768,7 +766,7 @@ Go to the <a href="commands.html">next</a> section or return to the
       <docs>
 <![CDATA[
  Set the \c SIP_SUPPORT tag to \c YES if your project consists
- of <a href="https://www.riverbankcomputing.com/software/sip/intro">sip</a> sources only.
+ of <a href="https://www.riverbankcomputing.com/software">sip</a> sources only.
  Doxygen will parse them like normal C++ but will assume all classes use public
  instead of private inheritance when no explicit protection keyword is present.
 ]]>
@@ -1538,7 +1536,7 @@ FILE_VERSION_FILTER = "cleartool desc -fmt \%Vn"
  encoding instead of the default \ref cfg_input_encoding "INPUT_ENCODING") if there is a match.
  The character encodings are a list of the form: pattern=encoding (like `*.php=ISO-8859-1`).
 
- See cfg_input_encoding "INPUT_ENCODING" for further information on supported encodings.
+ \sa \ref cfg_input_encoding "INPUT_ENCODING" for further information on supported encodings.
 ]]>
       </docs>
     </option>
@@ -2226,11 +2224,11 @@ hr.footer {
  a dark or light theme.
 ]]>
       </docs>
-      <value name="LIGHT" desc="always generate light mode output"/>
-      <value name="DARK" desc="always generate dark mode output"/>
-      <value name="AUTO_LIGHT" desc="automatically set the mode according to the user preference, use light mode if no preference is set (the default)"/>
-      <value name="AUTO_DARK" desc="automatically set the mode according to the user preference, use dark mode if no preference is set"/>
-      <value name="TOGGLE" desc="allow to user to switch between light and dark mode via a button"/>
+      <value name="LIGHT" desc="always generates light mode output"/>
+      <value name="DARK" desc="always generates dark mode output"/>
+      <value name="AUTO_LIGHT" desc="automatically sets the mode according to the user preference, uses light mode if no preference is set (the default)"/>
+      <value name="AUTO_DARK" desc="automatically sets the mode according to the user preference, uses dark mode if no preference is set"/>
+      <value name="TOGGLE" desc="allows a user to switch between light and dark mode via a button"/>
     </option>
     <option type='int' id='HTML_COLORSTYLE_HUE' minval='0' maxval='359' defval='220' depends='GENERATE_HTML'>
       <docs>
@@ -2299,7 +2297,10 @@ hr.footer {
 <![CDATA[
  If the \c HTML_COPY_CLIPBOARD tag is set to \c YES then doxygen will show an
  icon in the top right corner of code and text fragments that allows the user
- to copy its content to the clipboard (provided this is supported by the browser).
+ to copy its content to the clipboard.
+ Note this only works if supported by the browser and the web page is served via a
+ <a href="https://www.w3.org/TR/secure-contexts/">secure context</a>, i.e. using the
+ https: or file: protocol.
 ]]>
       </docs>
     </option>
@@ -2739,7 +2740,7 @@ obfuscate email addresses.
 ]]>
       </docs>
       <value name="HTML-CSS" desc="(which is slower, but has the best compatibility. This is the name for Mathjax version 2, for MathJax version 3 this will be translated into \c chtml)"/>
-      <value name="NativeMML" desc="(i.e. MathML. Only supported for NathJax 2. For MathJax version 3 \c chtml will be used instead.)"/>
+      <value name="NativeMML" desc="(i.e. MathML. Only supported for MathJax 2. For MathJax version 3 \c chtml will be used instead.)"/>
       <value name="chtml" desc="(This is the name for Mathjax version 3, for MathJax version 2 this will be translated into \c HTML-CSS)"/>
       <value name="SVG"/>
     </option>
@@ -3341,6 +3342,17 @@ The following block name is set based on whether or not a feature is used in the
 ]]>
       </docs>
     </option>
+    <option type='list' id='RTF_EXTRA_FILES' format='file' depends='GENERATE_RTF'>
+      <docs>
+<![CDATA[
+ The \c RTF_EXTRA_FILES tag can be used to specify one or more extra images
+ or other source files which should be copied to the \ref cfg_rtf_output "RTF_OUTPUT"
+ output directory.
+ Note that the files will be copied as-is; there are no commands or markers
+ available.
+]]>
+      </docs>
+    </option>
   </group>
   <group name='Man' docs='Configuration options related to the man page output'>
     <option type='bool' id='GENERATE_MAN' defval='0'>
@@ -3872,8 +3884,8 @@ UML notation for the relationships.
       <docs>
 <![CDATA[
  The \c DOT_WRAP_THRESHOLD tag can be used to set the maximum number of characters to display on
- a single line. If the actual line length exceeds this threshold significantly it will wrapped
- across multiple lines. Some heuristics are apply to avoid ugly line breaks.
+ a single line. If the actual line length exceeds this threshold significantly it will be wrapped
+ across multiple lines. Some heuristics are applied to avoid ugly line breaks.
 ]]>
       </docs>
     </option>
@@ -4078,7 +4090,7 @@ to be found in the default search path.
  The \c DOT_GRAPH_MAX_NODES tag can be used to set the maximum number of
  nodes that will be shown in the graph. If the number of nodes in a graph
  becomes larger than this value, doxygen will truncate the graph, which is
- visualized by representing a node as a red box. Note that doxygen if the number
+ visualized by representing a node as a red box. Note that if the number
  of direct children of the root node in a graph is already larger than
  \c DOT_GRAPH_MAX_NODES then the graph will not be shown at all. Also note
  that the size of a graph can be further restricted by \ref cfg_max_dot_graph_depth "MAX_DOT_GRAPH_DEPTH".

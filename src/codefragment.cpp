@@ -64,8 +64,8 @@ void CodeFragmentManager::Private::FragmentInfo::findBlockMarkers()
   // find the potential snippet blocks (can also be other array like stuff in the file)
   const char *s=fileContents.data();
   int lineNr=1;
-  char c;
-  const char *foundOpen=0;
+  char c=0;
+  const char *foundOpen=nullptr;
   std::unordered_map<std::string,BlockMarker> candidates;
   while ((c=*s))
   {
@@ -80,7 +80,7 @@ void CodeFragmentManager::Private::FragmentInfo::findBlockMarkers()
     }
     else if (c=='\n')
     {
-      foundOpen=0;
+      foundOpen=nullptr;
       lineNr++;
     }
     s++;
@@ -92,7 +92,7 @@ void CodeFragmentManager::Private::FragmentInfo::findBlockMarkers()
   for (auto &kv : candidates)
   {
     auto &marker = kv.second;
-    if (marker.lines.size()==2 && marker.lines[0]+1<marker.lines[1]-1)
+    if (marker.lines.size()==2 && marker.lines[0]+1<=marker.lines[1]-1)
     {
       marker.key = kv.first;
       int startLine = marker.lines[0];
@@ -105,7 +105,7 @@ void CodeFragmentManager::Private::FragmentInfo::findBlockMarkers()
   s=fileContents.data();
   static auto gotoLine = [](const char *startBuf, const char *startPos, int startLine, int targetLine) -> const char *
   {
-    char cc;
+    char cc=0;
     if (targetLine<startLine)
     {
       //printf("gotoLine(pos=%p,start=%d,target=%d) backward\n",(void*)startPos,startLine,targetLine);
@@ -133,8 +133,8 @@ void CodeFragmentManager::Private::FragmentInfo::findBlockMarkers()
   static auto lineIndent = [](const char *&ss) -> int
   {
     int tabSize=Config_getInt(TAB_SIZE);
-    int col=0;
-    char cc;
+    int col = 0;
+    char cc = 0;
     while ((cc=*ss++))
     {
       if (cc==' ') col++;
@@ -205,8 +205,8 @@ void CodeFragmentManager::Private::FragmentInfo::findBlockMarkers()
         // process lines until the end of the indented block
         while (s < ee)
         {
-          int col=0;
-          char cc;
+          int col = 0;
+          char cc = 0;
           // skip over indentation
           while (col < marker.indent && (cc=*s++))
           {
@@ -222,7 +222,7 @@ void CodeFragmentManager::Private::FragmentInfo::findBlockMarkers()
     // copy part after the last indented block
     while (s < e) *d++=*s++;
     // shrink the string for the indentation that was removed
-    fileContentsTrimLeft.resize(d-fileContentsTrimLeft.data()+1);
+    fileContentsTrimLeft.resize(d-fileContentsTrimLeft.data());
     //printf("result after trimming:\n=====%s=====\n",qPrint(fileContentsTrimLeft));
     recorderCodeListTrimLeft.add<OutputCodeRecorder>();
   }
@@ -263,7 +263,7 @@ static QCString readTextFileByName(const QCString &file)
   }
 
   // as a fallback we also look in the exampleNameDict
-  bool ambig;
+  bool ambig=false;
   FileDef *fd = findFileDef(Doxygen::exampleNameLinkedMap,file,ambig);
   if (fd)
   {
@@ -386,11 +386,11 @@ void CodeFragmentManager::parseCodeFragment(OutputCodeList & codeOutList,
     AUTO_TRACE_ADD("replay(start={},end={}) fileContentsTrimLeft.empty()={}",startLine,endLine,codeFragment->fileContentsTrimLeft.isEmpty());
     if (!trimLeft || codeFragment->fileContentsTrimLeft.isEmpty()) // replay the normal version
     {
-      codeFragment->recorderCodeList.get<OutputCodeRecorder>()->replay(codeOutList,startLine+1,endLine,showLineNumbers);
+      codeFragment->recorderCodeList.get<OutputCodeRecorder>(OutputType::Recorder)->replay(codeOutList,startLine+1,endLine,showLineNumbers);
     }
     else // replay the trimmed version
     {
-      codeFragment->recorderCodeListTrimLeft.get<OutputCodeRecorder>()->replay(codeOutList,startLine+1,endLine,showLineNumbers);
+      codeFragment->recorderCodeListTrimLeft.get<OutputCodeRecorder>(OutputType::Recorder)->replay(codeOutList,startLine+1,endLine,showLineNumbers);
     }
   }
   else

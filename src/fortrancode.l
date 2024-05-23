@@ -134,31 +134,31 @@ struct fortrancodeYY_state
   bool          isExternal = false;
   QCString      str=QCString();             //!< contents of fortran string
 
-  OutputCodeList * code = 0;
+  OutputCodeList * code = nullptr;
 
-  const char *  inputString = 0;     //!< the code fragment as text
+  const char *  inputString = nullptr;     //!< the code fragment as text
   int           inputPosition = 0;   //!< read offset during parsing
   int           inputLines = 0;      //!< number of line in the code fragment
   QCString      fileName;
   int           yyLineNr = 0;        //!< current line number
   int           contLineNr = 0;      //!< current, local, line number for continuation determination
-  int          *hasContLine = 0;     //!< signals whether or not a line has a continuation line (fixed source form)
+  int          *hasContLine = nullptr;     //!< signals whether or not a line has a continuation line (fixed source form)
   bool          insideCodeLine = false;
-  const Definition *searchCtx = 0;
+  const Definition *searchCtx = nullptr;
   bool          collectXRefs = false;
   bool          isFixedForm = false;
 
   bool          insideBody = false;      //!< inside subprog/program body? => create links
-  const char *  currentFontClass = 0;
+  const char *  currentFontClass = nullptr;
 
   bool          exampleBlock = false;
   QCString      exampleName;
   QCString      exampleFile;
 
   std::unique_ptr<FileDef> exampleFileDef;
-  const FileDef *    sourceFileDef = 0;
-  const Definition * currentDefinition = 0;
-  const MemberDef *  currentMemberDef = 0;
+  const FileDef *    sourceFileDef = nullptr;
+  const Definition * currentDefinition = nullptr;
+  const MemberDef *  currentMemberDef = nullptr;
   bool          includeCodeFragment = false;
 
   char          stringStartSymbol = '\0'; // single or double quote
@@ -451,7 +451,7 @@ LANGUAGE_BIND_SPEC BIND{BS}"("{BS}C{BS}(,{BS}NAME{BS}"="{BS}"\""(.*)"\""{BS})?")
                                           YY_FTN_REJECT;
                                         }
 <Start>^{BS}"end"({BS_}"module").*      { // just reset yyextra->currentModule, rest is done in following rule
-                                          yyextra->currentModule=0;
+                                          yyextra->currentModule=nullptr;
                                           YY_FTN_REJECT;
                                         }
  /*-------- subprog definition -------------------------------------*/
@@ -773,6 +773,7 @@ LANGUAGE_BIND_SPEC BIND{BS}"("{BS}C{BS}(,{BS}NAME{BS}"="{BS}"\""(.*)"\""{BS})?")
                                           endFontClass(yyscanner);
                                           pop_state(yyscanner);
                                         }
+<String>[\x80-\xFF]*                    |
 <String>.                               {yyextra->str+=yytext;}
 
 <*>\"|\'                                { /* string starts */
@@ -866,7 +867,7 @@ static void endFontClass(yyscan_t yyscanner)
   if (yyextra->currentFontClass)
   {
     yyextra->code->endFontClass();
-    yyextra->currentFontClass=0;
+    yyextra->currentFontClass=nullptr;
   }
 }
 
@@ -886,24 +887,24 @@ static void startFontClass(yyscan_t yyscanner,const char *s)
 static void setCurrentDoc(yyscan_t yyscanner,const QCString &anchor)
 {
   struct yyguts_t *yyg = (struct yyguts_t*)yyscanner;
-  if (Doxygen::searchIndex)
+  if (Doxygen::searchIndex.enabled())
   {
     if (yyextra->searchCtx)
     {
-      Doxygen::searchIndex->setCurrentDoc(yyextra->searchCtx,yyextra->searchCtx->anchor(),FALSE);
+      Doxygen::searchIndex.setCurrentDoc(yyextra->searchCtx,yyextra->searchCtx->anchor(),FALSE);
     }
     else
     {
-      Doxygen::searchIndex->setCurrentDoc(yyextra->sourceFileDef,anchor,TRUE);
+      Doxygen::searchIndex.setCurrentDoc(yyextra->sourceFileDef,anchor,TRUE);
     }
   }
 }
 
 static void addToSearchIndex(yyscan_t /*yyscanner*/,const QCString &text)
 {
-  if (Doxygen::searchIndex)
+  if (Doxygen::searchIndex.enabled())
   {
-    Doxygen::searchIndex->addWord(text,FALSE);
+    Doxygen::searchIndex.addWord(text,FALSE);
   }
 }
 
@@ -1039,7 +1040,7 @@ static void codifyLines(yyscan_t yyscanner,const QCString &text)
   //printf("codifyLines(%d,\"%s\")\n",yyextra->yyLineNr,text);
   if (text.isEmpty()) return;
   const char *p=text.data(),*sp=p;
-  char c;
+  char c = 0;
   bool done=FALSE;
   while (!done)
   {
@@ -1048,12 +1049,9 @@ static void codifyLines(yyscan_t yyscanner,const QCString &text)
     if (c=='\n')
     {
       yyextra->yyLineNr++;
-      int l = (int)(p-sp-1);
-      char *tmp = (char*)malloc(l+1);
-      memcpy(tmp,sp,l);
-      tmp[l]='\0';
-      yyextra->code->codify(QCString(tmp));
-      free(tmp);
+      size_t l = static_cast<size_t>(p-sp-1);
+      std::string tmp(sp,l);
+      yyextra->code->codify(tmp.c_str());
       nextCodeLine(yyscanner);
     }
     else
@@ -1087,7 +1085,7 @@ static void writeMultiLineCodeLink(yyscan_t yyscanner,OutputCodeList &ol,
   while (!done)
   {
     const char *sp=p;
-    char c;
+    char c = 0;
     while ((c=*p++) && c!='\n') { }
     if (c=='\n')
     {
@@ -1212,9 +1210,9 @@ static MemberDef *getFortranDefs(yyscan_t yyscanner,const QCString &memberName, 
       {
         const NamespaceDef *nspace= md->getNamespaceDef();
 
-        if (nspace == 0)
+        if (nspace == nullptr)
         { // found function in global scope
-          if(cd == 0)
+          if (cd == nullptr)
           { // Skip if bound to type
             return md.get();
           }
@@ -1272,12 +1270,12 @@ static bool getLink(yyscan_t yyscanner,const UseMap &useMap, // dictionary with 
                     const QCString &text)
 {
   struct yyguts_t *yyg = (struct yyguts_t*)yyscanner;
-  MemberDef *md=0;
+  MemberDef *md=nullptr;
   QCString memberName= removeRedundantWhiteSpace(memberText);
 
   if ((md=getFortranDefs(yyscanner,memberName, yyextra->currentModule, useMap)) && md->isLinkable())
   {
-    if (md->isVariable() && (md->getLanguage()!=SrcLangExt_Fortran)) return FALSE; // Non Fortran variables aren't handled yet,
+    if (md->isVariable() && (md->getLanguage()!=SrcLangExt::Fortran)) return FALSE; // Non Fortran variables aren't handled yet,
                                                                                    // see also linkifyText in util.cpp
 
     const Definition *d = md->getOuterScope()==Doxygen::globalScope ?
@@ -1302,8 +1300,8 @@ static bool getLink(yyscan_t yyscanner,const UseMap &useMap, // dictionary with 
 static void generateLink(yyscan_t yyscanner,OutputCodeList &ol, const QCString &lname)
 {
   struct yyguts_t *yyg = (struct yyguts_t*)yyscanner;
-  ClassDef *cd=0;
-  NamespaceDef *nsd=0;
+  ClassDef *cd=nullptr;
+  NamespaceDef *nsd=nullptr;
   QCString name = lname;
   name = removeRedundantWhiteSpace(name.lower());
 
@@ -1352,7 +1350,7 @@ static int countLines(yyscan_t yyscanner)
 {
   struct yyguts_t *yyg = (struct yyguts_t*)yyscanner;
   const char *p=yyextra->inputString;
-  char c;
+  char c = 0;
   int count=1;
   while ((c=*p))
   {
@@ -1373,7 +1371,7 @@ static void startScope(yyscan_t yyscanner)
 {
   struct yyguts_t *yyg = (struct yyguts_t*)yyscanner;
   DBG_CTX((stderr, "===> startScope %s",yytext));
-  yyextra->scopeStack.push_back(Scope());
+  yyextra->scopeStack.emplace_back();
 }
 
 /** end scope */
@@ -1432,7 +1430,9 @@ static void checkContLines(yyscan_t yyscanner,const char *s)
 
   yyextra->hasContLine = (int *) malloc((numLines) * sizeof(int));
   for (i = 0; i < numLines; i++)
+  {
     yyextra->hasContLine[i] = 0;
+  }
   p = prepassFixedForm(s, yyextra->hasContLine,yyextra->fixedCommentAfter);
   yyextra->hasContLine[0] = 0;
 }
@@ -1475,9 +1475,9 @@ FortranCodeParser::~FortranCodeParser()
 void FortranCodeParser::resetCodeParserState()
 {
   struct yyguts_t *yyg = (struct yyguts_t*)p->yyscanner;
-  yyextra->currentDefinition = 0;
-  yyextra->currentMemberDef = 0;
-  yyextra->currentFontClass = 0;
+  yyextra->currentDefinition = nullptr;
+  yyextra->currentMemberDef = nullptr;
+  yyextra->currentFontClass = nullptr;
   yyextra->insideCodeLine = FALSE;
   BEGIN( Start );
 }
@@ -1509,20 +1509,20 @@ void FortranCodeParser::parseCode(OutputCodeList & codeOutIntf,
   //                const MemberDef *,bool,const Definition *searchCtx,
   //                bool collectXRefs, FortranFormat format)
   if (input.isEmpty()) return;
-  DebugLex debugLex(Debug::Lex_fortrancode, __FILE__, fileDef ? qPrint(fileDef->fileName()): NULL);
+  DebugLex debugLex(Debug::Lex_fortrancode, __FILE__, fileDef ? qPrint(fileDef->fileName()): nullptr);
   yyextra->code = &codeOutIntf;
   yyextra->inputString   = input.data();
   yyextra->inputPosition = 0;
   yyextra->fileName      = fileDef ? fileDef->fileName():"";
   yyextra->isFixedForm = recognizeFixedForm(input,p->format);
   yyextra->contLineNr = 1;
-  yyextra->hasContLine = NULL;
+  yyextra->hasContLine = nullptr;
   if (yyextra->isFixedForm)
   {
     checkContLines(yyscanner,yyextra->inputString);
     yyextra->fixedCommentAfter = Config_getInt(FORTRAN_COMMENT_AFTER);
   }
-  yyextra->currentFontClass = 0;
+  yyextra->currentFontClass = nullptr;
   yyextra->insideCodeLine = FALSE;
   yyextra->searchCtx = searchCtx;
   yyextra->collectXRefs = collectXRefs;
@@ -1540,7 +1540,7 @@ void FortranCodeParser::parseCode(OutputCodeList & codeOutIntf,
   yyextra->exampleName   = exampleName;
   yyextra->sourceFileDef = fileDef;
   yyextra->foldStack.clear();
-  if (isExampleBlock && fileDef==0)
+  if (isExampleBlock && fileDef==nullptr)
   {
     // create a dummy filedef for the example
     yyextra->exampleFileDef = createFileDef(QCString(),exampleName);
@@ -1550,15 +1550,15 @@ void FortranCodeParser::parseCode(OutputCodeList & codeOutIntf,
   {
     setCurrentDoc(yyscanner,QCString("l00001"));
   }
-  yyextra->currentDefinition = 0;
-  yyextra->currentMemberDef = 0;
+  yyextra->currentDefinition = nullptr;
+  yyextra->currentMemberDef = nullptr;
   if (!yyextra->exampleName.isEmpty())
   {
     yyextra->exampleFile = convertNameToFile(yyextra->exampleName+"-example");
   }
   yyextra->includeCodeFragment = inlineFragment;
   startCodeLine(yyscanner);
-  fortrancodeYYrestart(0, yyscanner);
+  fortrancodeYYrestart(nullptr, yyscanner);
   BEGIN( Start );
   fortrancodeYYlex(yyscanner);
   if (yyextra->insideCodeLine)
@@ -1577,10 +1577,10 @@ void FortranCodeParser::parseCode(OutputCodeList & codeOutIntf,
   {
     // delete the temporary file definition used for this example
     yyextra->exampleFileDef.reset();
-    yyextra->sourceFileDef=0;
+    yyextra->sourceFileDef=nullptr;
   }
   if (yyextra->hasContLine) free(yyextra->hasContLine);
-  yyextra->hasContLine = NULL;
+  yyextra->hasContLine = nullptr;
 
   // write the tooltips
   yyextra->tooltipManager.writeTooltips(codeOutIntf);

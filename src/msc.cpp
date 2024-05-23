@@ -42,7 +42,7 @@ static bool convertMapFile(TextStream &t,const QCString &mapName,const QCString 
   const int maxLineLen=1024;
   char url[maxLineLen];
   char ref[maxLineLen];
-  int x1,y1,x2,y2;
+  int x1=0, y1=0, x2=0, y2=0;
   std::string line;
   while (getline(f,line))
   {
@@ -162,7 +162,7 @@ void writeMscGraphFromFile(const QCString &inFile,const QCString &outDir,
   absOutFile+=Portable::pathSeparator();
   absOutFile+=outFile;
 
-  mscgen_format_t msc_format;
+  mscgen_format_t msc_format = mscgen_format_png;
   QCString imgName = absOutFile;
   switch (format)
   {
@@ -188,7 +188,7 @@ void writeMscGraphFromFile(const QCString &inFile,const QCString &outDir,
 
   if ( (format==MSC_EPS) && (Config_getBool(USE_PDFLATEX)) )
   {
-    QCString epstopdfArgs(maxCmdLine);
+    QCString epstopdfArgs(maxCmdLine, QCString::ExplicitSize);
     epstopdfArgs.sprintf("\"%s.eps\" --outfile=\"%s.pdf\"",
                          qPrint(absOutFile),qPrint(absOutFile));
     if (Portable::system("epstopdf",epstopdfArgs)!=0)
@@ -198,6 +198,11 @@ void writeMscGraphFromFile(const QCString &inFile,const QCString &outDir,
     }
   }
 
+  int i=std::max(imgName.findRev('/'),imgName.findRev('\\'));
+  if (i!=-1) // strip path
+  {
+    imgName=imgName.right(imgName.length()-i-1);
+  }
   Doxygen::indexList->addImageFile(imgName);
 
 }
