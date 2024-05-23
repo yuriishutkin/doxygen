@@ -168,7 +168,6 @@ bool                  Doxygen::generatingXmlOutput = FALSE;
 DefinesPerFileList    Doxygen::macroDefinitions;
 bool                  Doxygen::clangAssistedParsing = FALSE;
 QCString              Doxygen::verifiedDotPath;
-volatile bool         Doxygen::terminating = false;
 InputFileEncodingList Doxygen::inputFileEncodingList;
 std::mutex            Doxygen::countFlowKeywordsMutex;
 std::mutex            Doxygen::addExampleMutex;
@@ -3753,7 +3752,17 @@ static void findFriends()
                 mmd->name(),mmd->isFriend(),mmd->isRelated(),mmd->isFunction());
             const ArgumentList &mmdAl = mmd->argumentList();
             const ArgumentList &fmdAl = fmd->argumentList();
-            mergeArguments(const_cast<ArgumentList&>(mmdAl),const_cast<ArgumentList&>(fmdAl));
+            mergeArguments(const_cast<ArgumentList&>(fmdAl),const_cast<ArgumentList&>(mmdAl));
+
+            // reset argument lists to add missing default parameters
+            QCString mmdAlStr = argListToString(mmdAl);
+            QCString fmdAlStr = argListToString(fmdAl);
+            mmd->setArgsString(mmdAlStr);
+            fmd->setArgsString(fmdAlStr);
+            mmd->moveDeclArgumentList(std::make_unique<ArgumentList>(mmdAl));
+            fmd->moveDeclArgumentList(std::make_unique<ArgumentList>(fmdAl));
+            AUTO_TRACE_ADD("friend args='{}' member args='{}'",argListToString(fmd->argumentList()),argListToString(mmd->argumentList()));
+
             if (!fmd->documentation().isEmpty())
             {
               mmd->setDocumentation(fmd->documentation(),fmd->docFile(),fmd->docLine());
@@ -3797,6 +3806,7 @@ static void findFriends()
 
             mmd->addQualifiers(fmd->getQualifiers());
             fmd->addQualifiers(mmd->getQualifiers());
+
           }
         }
       }
@@ -9399,8 +9409,9 @@ void printSectionsTree()
   {
     for (const auto &si : SectionManager::instance())
     {
-      Debug::print(Debug::Sections,0,"Section = %s, file = %s, title = %s\n",
-            qPrint(si->label()),qPrint(si->fileName()),qPrint(si->title()));
+      Debug::print(Debug::Sections,0,"Section = %s, file = %s, title = %s, type = %d, ref = %s\n",
+            qPrint(si->label()),qPrint(si->fileName()),qPrint(si->title()),
+            si->type(),qPrint(si->ref()));
     }
   }
 }
@@ -9991,10 +10002,10 @@ static void generateDiskNames()
     else if (size>1) // multiple occurrences of the same file name
     {
       // sort the array
-      std::sort(fileEntries.begin(),
+      std::stable_sort(fileEntries.begin(),
                 fileEntries.end(),
                 [](const FileEntry &fe1,const FileEntry &fe2)
-                { return fe1.path < fe2.path; }
+                { return qstricmp_sort(fe1.path,fe2.path)<0; }
                );
 
       // since the entries are sorted, the common prefix of the whole array is same
@@ -10522,9 +10533,9 @@ static void readDir(FileInfo *fi,
   if (resultList && !dirResultList.empty())
   {
     // sort the resulting list to make the order platform independent.
-    std::sort(dirResultList.begin(),
+    std::stable_sort(dirResultList.begin(),
               dirResultList.end(),
-              [](const auto &f1,const auto &f2) { return qstricmp(f1.c_str(),f2.c_str())<0; });
+              [](const auto &f1,const auto &f2) { return qstricmp_sort(f1.c_str(),f2.c_str())<0; });
 
     // append the sorted results to resultList
     resultList->insert(resultList->end(), dirResultList.begin(), dirResultList.end());
@@ -11438,7 +11449,6 @@ static void stopDoxygen(int)
   }
   killpg(0,SIGINT);
   cleanUpDoxygen();
-  Doxygen::terminating=true;
   exitTracing();
   exit(1);
 }
@@ -11551,9 +11561,7 @@ static QCString createOutputDirectory(const QCString &baseDirName,
   Dir formatDir(result.str());
   if (!formatDir.exists() && !formatDir.mkdir(result.str()))
   {
-    err("Could not create output directory %s\n", qPrint(result));
-    cleanUpDoxygen();
-    exit(1);
+    term("Could not create output directory %s\n", qPrint(result));
   }
   return result;
 }
@@ -11727,19 +11735,19 @@ void searchInputFiles()
   }
 
   // Sort the FileDef objects by full path to get a predictable ordering over multiple runs
-  std::sort(Doxygen::inputNameLinkedMap->begin(),
+  std::stable_sort(Doxygen::inputNameLinkedMap->begin(),
             Doxygen::inputNameLinkedMap->end(),
             [](const auto &f1,const auto &f2)
             {
-              return  qstricmp(f1->fullName(),f2->fullName())<0;
+              return  qstricmp_sort(f1->fullName(),f2->fullName())<0;
             });
   for (auto &fileName : *Doxygen::inputNameLinkedMap)
   {
     if (fileName->size()>1)
     {
-      std::sort(fileName->begin(),fileName->end(),[](const auto &f1,const auto &f2)
+      std::stable_sort(fileName->begin(),fileName->end(),[](const auto &f1,const auto &f2)
         {
-          return qstricmp(f1->absFilePath(),f2->absFilePath())<0;
+          return qstricmp_sort(f1->absFilePath(),f2->absFilePath())<0;
         });
     }
   }
@@ -11804,10 +11812,8 @@ void parseInput()
       dir.setPath(Dir::currentDirPath());
       if (!dir.mkdir(outputDirectory.str()))
       {
-        err("tag OUTPUT_DIRECTORY: Output directory '%s' does not "
-            "exist and cannot be created\n",qPrint(outputDirectory));
-        cleanUpDoxygen();
-        exit(1);
+        term("tag OUTPUT_DIRECTORY: Output directory '%s' does not "
+             "exist and cannot be created\n",qPrint(outputDirectory));
       }
       else
       {
@@ -12234,51 +12240,51 @@ void parseInput()
 
   auto memberNameComp = [](const MemberNameLinkedMap::Ptr &n1,const MemberNameLinkedMap::Ptr &n2)
   {
-    return qstricmp(n1->memberName().data()+getPrefixIndex(n1->memberName()),
-                    n2->memberName().data()+getPrefixIndex(n2->memberName())
-                   )<0;
+    return qstricmp_sort(n1->memberName().data()+getPrefixIndex(n1->memberName()),
+                         n2->memberName().data()+getPrefixIndex(n2->memberName())
+                        )<0;
   };
 
   auto classComp = [](const ClassLinkedMap::Ptr &c1,const ClassLinkedMap::Ptr &c2)
   {
     if (Config_getBool(SORT_BY_SCOPE_NAME))
     {
-      return qstricmp(c1->name(), c2->name())<0;
+      return qstricmp_sort(c1->name(), c2->name())<0;
     }
     else
     {
-      int i = qstricmp(c1->className(), c2->className());
-      return i==0 ? qstricmp(c1->name(), c2->name())<0 : i<0;
+      int i = qstricmp_sort(c1->className(), c2->className());
+      return i==0 ? qstricmp_sort(c1->name(), c2->name())<0 : i<0;
     }
   };
 
   auto namespaceComp = [](const NamespaceLinkedMap::Ptr &n1,const NamespaceLinkedMap::Ptr &n2)
   {
-    return qstricmp(n1->name(),n2->name())<0;
+    return qstricmp_sort(n1->name(),n2->name())<0;
   };
 
   auto conceptComp = [](const ConceptLinkedMap::Ptr &c1,const ConceptLinkedMap::Ptr &c2)
   {
-    return qstricmp(c1->name(),c2->name())<0;
+    return qstricmp_sort(c1->name(),c2->name())<0;
   };
 
   g_s.begin("Sorting lists...\n");
-  std::sort(Doxygen::memberNameLinkedMap->begin(),
+  std::stable_sort(Doxygen::memberNameLinkedMap->begin(),
             Doxygen::memberNameLinkedMap->end(),
             memberNameComp);
-  std::sort(Doxygen::functionNameLinkedMap->begin(),
+  std::stable_sort(Doxygen::functionNameLinkedMap->begin(),
             Doxygen::functionNameLinkedMap->end(),
             memberNameComp);
-  std::sort(Doxygen::hiddenClassLinkedMap->begin(),
+  std::stable_sort(Doxygen::hiddenClassLinkedMap->begin(),
             Doxygen::hiddenClassLinkedMap->end(),
             classComp);
-  std::sort(Doxygen::classLinkedMap->begin(),
+  std::stable_sort(Doxygen::classLinkedMap->begin(),
             Doxygen::classLinkedMap->end(),
             classComp);
-  std::sort(Doxygen::conceptLinkedMap->begin(),
+  std::stable_sort(Doxygen::conceptLinkedMap->begin(),
             Doxygen::conceptLinkedMap->end(),
             conceptComp);
-  std::sort(Doxygen::namespaceLinkedMap->begin(),
+  std::stable_sort(Doxygen::namespaceLinkedMap->begin(),
             Doxygen::namespaceLinkedMap->end(),
             namespaceComp);
   g_s.end();
@@ -12390,7 +12396,7 @@ void parseInput()
 
   if (Config_getBool(SORT_GROUP_NAMES))
   {
-    std::sort(Doxygen::groupLinkedMap->begin(),
+    std::stable_sort(Doxygen::groupLinkedMap->begin(),
               Doxygen::groupLinkedMap->end(),
               [](const auto &g1,const auto &g2)
               { return g1->groupTitle() < g2->groupTitle(); });

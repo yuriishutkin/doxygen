@@ -187,11 +187,18 @@ static int computeIndent(const char *str,size_t length)
     {
       indent=0;
     }
+    else if (str[i]=='\\' && qstrncmp(str+i+1,"ilinebr",7)==0)
+    {
+      indent=0;
+      i+=7;
+      if (str[i+1]==' ') i++; // also eat space after \\ilinebr if present
+    }
     else
     {
       indent++;
     }
   }
+  //printf("input('%s')=%d\n",str,indent);
   return indent;
 }
 
@@ -272,7 +279,7 @@ MAILADDR2 {MAILWS}+{BLANK}+("at"|"AT"|"_at_"|"_AT_"){BLANK}+{MAILWS}+("dot"|"DOT
 OPTSTARS  ("/""/"{BLANK}*)?"*"*{BLANK}*
 LISTITEM  {BLANK}*[-]("#")?{WS}
 MLISTITEM {BLANK}*[+*]{WS}
-OLISTITEM {BLANK}*[1-9][0-9]*"."{BLANK}
+OLISTITEM {BLANK}*("0"|[1-9][0-9]*)"."{BLANK}
 CLISTITEM {BLANK}*[-]{BLANK}*"\["[ xX]"\]"
 ENDLIST   {BLANK}*"."{BLANK}*(\n|"\\ilinebr")
 ATTRNAME  [a-z_A-Z\x80-\xFF][:a-z_A-Z0-9\x80-\xFF\-]*
@@ -341,7 +348,7 @@ REFWORD4       {REFWORD4_NOCV}{CVSPEC}?
 REFWORD        {FILEMASK}|{LABELID}|{REFWORD2}|{REFWORD3}|{REFWORD4}
 REFWORD_NOCV   {FILEMASK}|{LABELID}|{REFWORD2_NOCV}|{REFWORD3}|{REFWORD4_NOCV}
 RCSID "$"("Author"|"Date"|"Header"|"Id"|"Locker"|"Log"|"Name"|"RCSfile"|"Revision"|"Source"|"State")":"[^:\n$][^\n$]*"$"
-LINENR {BLANK}*[1-9][0-9]*
+LINENR {BLANK}*([1-9][0-9]*|"0")
 
 SHOWDATE ([0-9]{4}"-"[0-9]{1,2}"-"[0-9]{1,2})?({WS}*[0-9]{1,2}":"[0-9]{1,2}(":"[0-9]{1,2})?)?
 

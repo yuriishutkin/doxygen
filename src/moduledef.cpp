@@ -702,6 +702,7 @@ void ModuleDefImpl::findSectionsInDocumentation()
 {
   docFindSections(briefDescription(),this,docFile());
   docFindSections(documentation(),this,docFile());
+  docFindSections(inbodyDocumentation(),this,docFile());
   for (const auto &mg : m_memberGroups)
   {
     mg->findSectionsInDocumentation(this);
@@ -726,19 +727,19 @@ void ModuleDefImpl::sortMemberLists()
   {
     auto classComp = [](const ClassLinkedRefMap::Ptr &c1,const ClassLinkedRefMap::Ptr &c2)
     {
-      return Config_getBool(SORT_BY_SCOPE_NAME)     ?
-        qstricmp(c1->name(), c2->name())<0          :
-        qstricmp(c1->className(), c2->className())<0;
+      return Config_getBool(SORT_BY_SCOPE_NAME)          ?
+        qstricmp_sort(c1->name(), c2->name())<0          :
+        qstricmp_sort(c1->className(), c2->className())<0;
     };
-    std::sort(m_classes.begin(), m_classes.end(), classComp);
+    std::stable_sort(m_classes.begin(), m_classes.end(), classComp);
 
     auto conceptComp = [](const ConceptLinkedRefMap::Ptr &c1,const ConceptLinkedRefMap::Ptr &c2)
     {
-      return Config_getBool(SORT_BY_SCOPE_NAME)              ?
-        qstricmp(c1->qualifiedName(), c2->qualifiedName())<0 :
-        qstricmp(c1->name(), c2->name())<0;
+      return Config_getBool(SORT_BY_SCOPE_NAME)                   ?
+        qstricmp_sort(c1->qualifiedName(), c2->qualifiedName())<0 :
+        qstricmp_sort(c1->name(), c2->name())<0;
     };
-    std::sort(m_concepts.begin(), m_concepts.end(), conceptComp);
+    std::stable_sort(m_concepts.begin(), m_concepts.end(), conceptComp);
   }
 
   static auto contrComp = [](const ModuleDef *m1, const ModuleDef *m2)
@@ -762,11 +763,11 @@ void ModuleDefImpl::sortMemberLists()
     };
     auto tr1 = typeRank(m1);
     auto tr2 = typeRank(m2);
-    int diff = qstricmp(fn1,fn2);
+    int diff = qstricmp_sort(fn1,fn2);
     return tr1<tr2 || (tr1==tr2 && diff<0);
   };
 
-  std::sort(m_contributing.begin(), m_contributing.end(), contrComp);
+  std::stable_sort(m_contributing.begin(), m_contributing.end(), contrComp);
 }
 
 void ModuleDefImpl::writeSummaryLinks(OutputList &ol) const

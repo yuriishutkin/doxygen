@@ -4819,6 +4819,7 @@ void MemberDefImpl::findSectionsInDocumentation()
 {
   docFindSections(briefDescription(),this,docFile());
   docFindSections(documentation(),this,docFile());
+  docFindSections(inbodyDocumentation(),this,docFile());
 }
 
 void MemberDefImpl::overrideCallGraph(bool e)

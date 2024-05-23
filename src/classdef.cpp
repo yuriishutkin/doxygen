@@ -1242,6 +1242,7 @@ void ClassDefImpl::findSectionsInDocumentation()
 {
   docFindSections(briefDescription(),this,docFile());
   docFindSections(documentation(),this,docFile());
+  docFindSections(inbodyDocumentation(),this,docFile());
   for (const auto &mg : m_impl->memberGroups)
   {
     mg->findSectionsInDocumentation(this);
@@ -4337,13 +4338,13 @@ void ClassDefImpl::sortMemberLists()
   {
     if (ml->needsSorting()) { ml->sort(); ml->setNeedsSorting(FALSE); }
   }
-  std::sort(m_impl->innerClasses.begin(),
+  std::stable_sort(m_impl->innerClasses.begin(),
             m_impl->innerClasses.end(),
             [](const auto &c1,const auto &c2)
             {
-               return Config_getBool(SORT_BY_SCOPE_NAME)           ?
-                      qstricmp(c1->name(),      c2->name()     )<0 :
-                      qstricmp(c1->className(), c2->className())<0 ;
+               return Config_getBool(SORT_BY_SCOPE_NAME)                ?
+                      qstricmp_sort(c1->name(),      c2->name()     )<0 :
+                      qstricmp_sort(c1->className(), c2->className())<0 ;
             });
 }
 
@@ -4711,11 +4712,11 @@ const MemberNameInfoLinkedMap &ClassDefImpl::memberNameInfoLinkedMap() const
 
 void ClassDefImpl::sortAllMembersList()
 {
-  std::sort(m_impl->allMemberNameInfoLinkedMap.begin(),
+  std::stable_sort(m_impl->allMemberNameInfoLinkedMap.begin(),
             m_impl->allMemberNameInfoLinkedMap.end(),
             [](const auto &m1,const auto &m2)
             {
-              return qstricmp(m1->memberName(),m2->memberName())<0;
+              return qstricmp_sort(m1->memberName(),m2->memberName())<0;
             });
 }
 

@@ -137,6 +137,8 @@ struct commentcnvYY_state
   bool       isFixedForm = FALSE; // For Fortran
   std::deque<std::unique_ptr<commentcnv_FileState>> includeStack;
   std::vector<std::string> expandedAliases;
+  QCString snippetFileName;
+  QCString snippetName;
 };
 
 [[maybe_unused]] static const char *stateToString(int state);
@@ -184,6 +186,7 @@ MAILADDR   ("mailto:")?[a-z_A-Z0-9\x80-\xff.+-]+"@"[a-z_A-Z0-9\x80-\xff-]+("."[a
 %x ReadAliasArgs
 %x IncludeDoc
 %x SnippetDoc
+%x SnippetDocTag
 %x IncludeFile
 
 CMD ("\\"|"@")
@@ -1107,15 +1110,24 @@ SLASHopt [/]*
                                        BEGIN(yyextra->includeCtx);
                                      }
                                    }
-<SnippetDoc>({FILEMASK}|"\""[^\n\"]+"\""){B}+{ID} {
-                                     QCString fileName=yytext;
-                                     int i=fileName.findRev(' ');
-                                     if (i==-1) i=fileName.findRev('\t');
-                                     QCString blockId = "["+fileName.mid(i+1)+"]";
-                                     fileName=fileName.left(i).stripWhiteSpace();
-                                     //printf("yytext='%s' i=%d fileName='%s' blockId='%s'\n",yytext,i,qPrint(fileName),qPrint(blockId));
-                                     if (fileName == "this") fileName=yyextra->fileName;
-                                     if (readIncludeFile(yyscanner,fileName,blockId))
+<SnippetDoc>({FILEMASK}|"\""[^\n\"]+"\""){B}+ {
+                                     yyextra->snippetFileName=yytext;
+                                     yyextra->snippetFileName=yyextra->snippetFileName.stripWhiteSpace();
+                                     if (yyextra->snippetFileName == "this") yyextra->snippetFileName=yyextra->fileName;
+                                     yyextra->snippetName = "";
+                                     BEGIN(SnippetDocTag);
+                                   }
+<SnippetDocTag>[^\\\n]+            {
+                                     yyextra->snippetName += yytext;
+                                   }
+<SnippetDocTag>"\\"                {
+                                     yyextra->snippetName += yytext;
+                                   }
+<SnippetDocTag>(\n|"\\ilinebr")    {
+                                     for (int i=(int)yyleng-1;i>=0;i--) unput(yytext[i]);
+                                     yyextra->snippetName = yyextra->snippetName.stripWhiteSpace();
+                                     QCString blockId = "["+yyextra->snippetName+"]";
+                                     if (readIncludeFile(yyscanner,yyextra->snippetFileName,blockId))
                                      {
                                        BEGIN(IncludeFile);
                                      }
@@ -1124,6 +1136,7 @@ SLASHopt [/]*
                                        BEGIN(yyextra->includeCtx);
                                      }
                                    }
+
 <IncludeDoc,SnippetDoc>\n          {
 				     copyToOutput(yyscanner,yytext,yyleng);
                                      insertCommentStart(yyscanner);
@@ -1697,6 +1710,7 @@ static bool readIncludeFile(yyscan_t yyscanner,const QCString &inc,const QCStrin
     QCString oldRaiseLabel = yyextra->raiseLabel;
     yyextra->raiseLevel+=yyextra->raiseIncrement;
     yyextra->raiseLabel+=yyextra->raisePrefix;
+    lineNr--;
     QCString lineStr=" \\ilinebr \\ifile \""+absFileName+"\" \\iline " + std::to_string(lineNr);
     if (yyextra->raiseLevel>0)
     {
@@ -1706,12 +1720,14 @@ static bool readIncludeFile(yyscan_t yyscanner,const QCString &inc,const QCStrin
     {
       lineStr+=" \\iprefix \"" + yyextra->raiseLabel + "\"";
     }
-    lineStr+=" \\ilinebr ";
+    copyToOutput(yyscanner,lineStr.view());
+    insertCommentStart(yyscanner);
+    lineStr="\n";
     copyToOutput(yyscanner,lineStr.view());
 
     fs->fileName      = absFileName;
     fs->bufState      = YY_CURRENT_BUFFER;
-    fs->oldLineNr     = yyextra->lineNr;
+    fs->oldLineNr     = yyextra->lineNr-1;
     fs->oldFileName   = yyextra->fileName;
     fs->oldState      = yyextra->includeCtx;
     fs->oldFileBuf    = yyextra->inBuf;

@@ -78,6 +78,7 @@ struct DocParserContext
   QCString     exampleName;
   QCString     searchUrl;
   QCString     prefix;
+  SrcLangExt   lang = SrcLangExt::Cpp;
 
   QCString     includeFileName;
   QCString     includeFileText;
@@ -250,5 +251,16 @@ inline bool insideDetails(const DocNodeVariant *n)
   return FALSE;
 }
 
+//---------------------------------------------------------------------------
+
+inline bool insideDL(const DocNodeVariant *n)
+{
+  while (n)
+  {
+    if (std::holds_alternative<DocHtmlDescList>(*n)) return TRUE;
+    n=parent(n);
+  }
+  return FALSE;
+}
 
 #endif

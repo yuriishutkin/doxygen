@@ -360,6 +360,7 @@ void NamespaceDefImpl::findSectionsInDocumentation()
 {
   docFindSections(briefDescription(),this,docFile());
   docFindSections(documentation(),this,docFile());
+  docFindSections(inbodyDocumentation(),this,docFile());
   for (const auto &mg : m_memberGroups)
   {
     mg->findSectionsInDocumentation(this);
@@ -1455,23 +1456,23 @@ void NamespaceDefImpl::sortMemberLists()
 
   auto classComp = [](const ClassLinkedRefMap::Ptr &c1,const ClassLinkedRefMap::Ptr &c2)
   {
-    return Config_getBool(SORT_BY_SCOPE_NAME)     ?
-      qstricmp(c1->name(), c2->name())<0          :
-      qstricmp(c1->className(), c2->className())<0;
+    return Config_getBool(SORT_BY_SCOPE_NAME)          ?
+      qstricmp_sort(c1->name(), c2->name())<0          :
+      qstricmp_sort(c1->className(), c2->className())<0;
   };
 
-  std::sort(classes.begin(),   classes.end(),   classComp);
-  std::sort(interfaces.begin(),interfaces.end(),classComp);
-  std::sort(structs.begin(),   structs.end(),   classComp);
-  std::sort(exceptions.begin(),exceptions.end(),classComp);
+  std::stable_sort(classes.begin(),   classes.end(),   classComp);
+  std::stable_sort(interfaces.begin(),interfaces.end(),classComp);
+  std::stable_sort(structs.begin(),   structs.end(),   classComp);
+  std::stable_sort(exceptions.begin(),exceptions.end(),classComp);
 
 
   auto namespaceComp = [](const NamespaceLinkedRefMap::Ptr &n1,const NamespaceLinkedRefMap::Ptr &n2)
   {
-    return qstricmp(n1->name(),n2->name())<0;
+    return qstricmp_sort(n1->name(),n2->name())<0;
   };
 
-  std::sort(namespaces.begin(),namespaces.end(),namespaceComp);
+  std::stable_sort(namespaces.begin(),namespaces.end(),namespaceComp);
 }
 
 MemberList *NamespaceDefImpl::getMemberList(MemberListType lt) const

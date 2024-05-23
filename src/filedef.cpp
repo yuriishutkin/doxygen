@@ -341,6 +341,7 @@ void FileDefImpl::findSectionsInDocumentation()
 {
   docFindSections(briefDescription(),this,docFile());
   docFindSections(documentation(),this,docFile());
+  docFindSections(inbodyDocumentation(),this,docFile());
   for (const auto &mg : m_memberGroups)
   {
     mg->findSectionsInDocumentation(this);
@@ -1664,29 +1665,29 @@ void FileDefImpl::sortMemberLists()
     if (mlg.needsSorting()) { mlg.sort(); mlg.setNeedsSorting(FALSE); }
   }
 
-  std::sort(m_includedByList.begin(),m_includedByList.end(),
+  std::stable_sort(m_includedByList.begin(),m_includedByList.end(),
       [](const auto &fi1,const auto &fi2) { return fi1.includeName < fi2.includeName; });
 
   if (Config_getBool(SORT_BRIEF_DOCS))
   {
     auto classComp = [](const ClassLinkedRefMap::Ptr &c1,const ClassLinkedRefMap::Ptr &c2)
     {
-      return Config_getBool(SORT_BY_SCOPE_NAME)     ?
-        qstricmp(c1->name(),      c2->name())<0     :
-        qstricmp(c1->className(), c2->className())<0;
+      return Config_getBool(SORT_BY_SCOPE_NAME)          ?
+        qstricmp_sort(c1->name(),      c2->name())<0     :
+        qstricmp_sort(c1->className(), c2->className())<0;
     };
 
-    std::sort(m_classes.begin(),   m_classes.end(),   classComp);
-    std::sort(m_interfaces.begin(),m_interfaces.end(),classComp);
-    std::sort(m_structs.begin(),   m_structs.end(),   classComp);
-    std::sort(m_exceptions.begin(),m_exceptions.end(),classComp);
+    std::stable_sort(m_classes.begin(),   m_classes.end(),   classComp);
+    std::stable_sort(m_interfaces.begin(),m_interfaces.end(),classComp);
+    std::stable_sort(m_structs.begin(),   m_structs.end(),   classComp);
+    std::stable_sort(m_exceptions.begin(),m_exceptions.end(),classComp);
 
     auto namespaceComp = [](const NamespaceLinkedRefMap::Ptr &n1,const NamespaceLinkedRefMap::Ptr &n2)
     {
-      return qstricmp(n1->name(),n2->name())<0;
+      return qstricmp_sort(n1->name(),n2->name())<0;
     };
 
-    std::sort(m_namespaces.begin(),m_namespaces.end(),namespaceComp);
+    std::stable_sort(m_namespaces.begin(),m_namespaces.end(),namespaceComp);
   }
 }
 
@@ -1824,7 +1825,7 @@ bool FileDefImpl::hasIncludedByGraph() const
 
 bool compareFileDefs(const FileDef *fd1, const FileDef *fd2)
 {
-  return qstricmp(fd1->name(),fd2->name()) < 0;
+  return qstricmp_sort(fd1->name(),fd2->name()) < 0;
 }
 
 // --- Cast functions
